@@ -1,15 +1,14 @@
 #Elizabeth E. Esterly & Danny Byrd
 #visualizations.py
 #last updated 10/03/2017
+import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
 ####confusionMatrix########
 def confusionMatrix(m):
 	df = pd.DataFrame(m)
-	with open("confusion.txt", 'rw') as f:
-		print(df)
-	f.close()
+	np.savetxt('confusion.txt', df.values, fmt='%d')
 	return
 
 ####betaIteration##########
