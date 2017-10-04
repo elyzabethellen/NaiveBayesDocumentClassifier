@@ -1,3 +1,4 @@
 #Elizabeth E. Esterly & Danny Byrd
 #bayesForDays.py
-#last updated 10/03/2017
+#last updated 10/04/2017
+
