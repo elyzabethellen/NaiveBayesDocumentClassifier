@@ -8,5 +8,8 @@
 # maybe good to store a dictionary of label:index
 
 ###how many times have we seen this word and class combo
+##i.e. position 12 (M) in training.csv == "of" and we see that occur in each training data point, often multiple times.
+##pos 23 (X) == "and", same deal
 
+#column # 61190 contains the label, from 1 -20
 
