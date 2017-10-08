@@ -1,23 +1,33 @@
 #Elizabeth E. Esterly & Danny Byrd
 #bayesForDays.py
-#last updated 10/05/2017
+#last updated 10/08/2017
 
-#create a dictionary of class number to group by reading in text file (for printing results)
+import numpy as np
+import csv
+import time
+CLASSES = 20
+VOCABULARY = 61188
 
-
-# create master list with 0s as first list
+#create a dictionary of int(class number) to list of attributes by reading in text file (for printing results)
+classReference = {}
+with open('newsgrouplabels.txt')as f:
+	for line in f:
+		y = int(''.join(x for x in line if x.isdigit()))
+		z = ''.join(x for x in line if not x.isdigit() and not x == '\n')
+		label = []
+		label.append(z)
+		classReference[y] = label
+'''
+print "Dictionary of labels created:"
+print classReference
+'''
+'''
+print "\n Begin training at"
+print time.ctime()
+'''
 
 ########DATA PROCESSING##############
-# read in data line by line; check last col to get class # column # 61190, or [-1] contains the label (from 1 -20)
-
-
-# when new class is found, append to master list
-
-
-# then within each class, store counts for EACH feature as values in a list. (matrix of values=list of lists)
-
-
-# results in matrix of 20 rows and 61188 columns
+# results in matrix of 21 rows and 61189 columns, with row and col 0 being 0'd out
 #####################################################
 
 # index 0 should be a dummy value at beginning of each new list
@@ -27,15 +37,32 @@
 #  1st label      #  0 2 8 9 0 1
 #  2nd label      #  0 1 2 1 8 2
 #  3rd label      #  0 4 0 2 6  . . .
+trainingMatrix = np.zeros((CLASSES + 1, VOCABULARY + 1))
+seen = np.zeros((1, CLASSES + 1))
+with open('training.csv') as t:
+	reader = csv.reader(t)
+	for row in reader:
+		idx = row[-1] #last position: get what class it belongs to
+		seen[0, idx] += 1
+		for i in range(1, VOCABULARY + 1):
+			if row[i] != '0': #data comes in as a string
+				trainingMatrix[idx, i] += int(row[i]) #increment the class at that vocab column with the count
+trainingDataCount = np.sum(seen)
+print trainingDataCount
 
-# log and across each matrix row p(x1....n| y), taking dot product with vector of py's, then sum
-# take the largest row val and that is your prediction.
-# return index of row and match to dict key or val
+'''''
+print "Training matrix completed at"
+print time.ctime()
+print "Training matrix sample--first row of matrix--should be all zeroes \n"
+print trainingMatrix[0,]
+print "Training matrix sample--index row 10 of matrix"
+print trainingMatrix[10,]
+'''''
+#update dictionary with
+# class number : ('newsgroup.names', totalWordCount (this class), P(this class) = seen[label]/ trainingDataCount)
+for i in range(1, CLASSES +1):
+	classReference.get(i).append(np.sum(trainingMatrix[i,]))
+	classReference.get(i).append(float(seen[0, i])/trainingDataCount)
+print classReference
 
-
-###MATHEMATICAL METHODS##################
-#TODO:
-#P(Y) given by MLE= multinomial? we have 20 class values (figure this out)
-# estimate P (X|Y ) using a MAP estimate with the prior distribution Dirichlet(1 + b, ..., 1 + b),
-#where b = 1/|V | and V is vocabulary (figure this out)
 
