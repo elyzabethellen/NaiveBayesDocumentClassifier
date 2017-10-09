@@ -1,16 +1,15 @@
 #Elizabeth E. Esterly & Danny Byrd
 #bayesForDays.py
-#last updated 10/08/2017
+#last updated 10/09/2017
 
 import numpy as np
 import csv
 import time
 CLASSES = 20
 VOCABULARY = 61188
-
-
-#create a dictionary of int(class number) to list of attributes by reading in text file (for printing results)
 classReference = {}
+
+
 with open('newsgrouplabels.txt')as f:
 	for line in f:
 		y = int(''.join(x for x in line if x.isdigit()))
