@@ -8,6 +8,7 @@ import time
 CLASSES = 20
 VOCABULARY = 61188
 
+
 #create a dictionary of int(class number) to list of attributes by reading in text file (for printing results)
 classReference = {}
 with open('newsgrouplabels.txt')as f:
