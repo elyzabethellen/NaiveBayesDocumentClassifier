@@ -48,8 +48,9 @@ def makeLabelDict():
 def classify(df, training):
 	predictions = []
 	for i in xrange(0, len(df.index)): #for each data point
-		result =  training.mul(df.iloc[i]).sum() #multiply df row by training data and sum rows (dot product)
-		predictions.append(result.idxmax())
+		copy = training
+		result =  copy.mul(df.iloc[i]).prod() #multiply df row by training data then mult across
+		predictions.append([i, result.idxmax()])
 	return predictions
 
 
