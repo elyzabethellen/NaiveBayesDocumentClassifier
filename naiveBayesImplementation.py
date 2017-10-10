@@ -3,6 +3,7 @@
 #last updated 10/10/2017
 
 import pandas as pd
+import numpy as np
 import csv
 
 ########makeTrainingMatrix##############
@@ -10,14 +11,15 @@ import csv
 # row indices = class label
 # sum across class labels and consolidate data
 # return training, classCounts
-def makeTrainingMatrix(beta):
-	df = pd.read_csv('training.csv', index_col=61189)  # 11 min; 11 min again; 12 min
-	classCounts = df.index.value_counts()
-	df = df.groupby(df.index).sum()
-	df = betaAdjustment(df, beta)
-	df = (df.T / df.T.sum()).T
-	training = df.drop('1', 1)
-	return training, classCounts
+def makeTrainingMatrix(filename, beta):
+	df = pd.read_csv(filename, header = None, index_col=61189)
+	classCounts = df.index.value_counts() #how many times a class was seen, for probablilites
+	classCounts = classCounts.T / classCounts.T.sum() #make into probs
+	classCounts = classCounts.sort_index() # sort by class index
+	df = df.groupby(df.index).sum() #group all classes together and sum their columns by class
+	df = betaAdjustment(df, beta) #add hallucinated counts (beta from Dirichlet distribution)
+	df = (df.T / df.T.sum()).T #probabilities: divide by each row sum of elements
+	return df, classCounts
 
 ########betaAdjustment###############
 # fill in the beta val to use as dirichlet prior
@@ -28,9 +30,8 @@ def betaAdjustment(training, beta):
 # read the .csv data to a pandas dataframe
 # row indices = id label
 # return testing
-def makeTestingMatrix(beta):
-	testing = pd.read_csv('testing.csv', index_col=1)
-	testing = betaAdjustment(testing, beta)
+def makeTestingMatrix(filename, beta):
+	testing = pd.read_csv(filename, header =None, index_col=0)
 	return testing
 
 ########makeLabelDict##############
@@ -46,26 +47,56 @@ def makeLabelDict():
 	return classToLabel
 
 #######classify#############
-def classify(df, training):
+def classify(df, t, classCounts):
 	predictions = []
 	predictions.append(['id','class'])
 	for i in xrange(0, len(df.index)): #for each data point
-		copy = training
-		result =  copy.mul(df.iloc[i]).prod(axis=0, skipna=True) #multiply test row by training data then mult across
-		predictions.append([i, result.idxmax()])
+		training = t
+		#result = (training.mul(df.iloc[i])).T
+		row = df.iloc[[i]]
+		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns--double [[]] to force df, not series
+		ref = pd.DataFrame(nonZero)
+		cols = nonZero.columns.tolist()
+		training = training[cols] #slice training using columns from nonZero
+		training = training.multiply(list(nonZero), axis = 1) #get probs across
+		#finally, multiply across each row and then by its class prob
+		training = training.T.prod(axis=0)
+		result = training * classCounts
+		predictions.append([df.index[i], result.idxmax()])
 	return predictions
 
 #####writePredictions#########
+# writing helper function that expects a list of lists
+# and writes a Kaggle-friendly .csv
 def writePredictions(predictions):
-	with open('predictions.csv', 'w') as f:
+	with open('predictions2.csv', 'w') as f:
 		writer = csv.writer(f)
 		writer.writerows(predictions)
 
-training, classCounts = makeTrainingMatrix(1)
-testing = makeTestingMatrix(1)
-predictions = classify(testing, training)
-writePredictions(predictions)
-print predictions
+#####partitionData##########
+# infile: data to be partitioned
+# outfile: resulting partition
+# maxRows: max rows in outfile
+def partitionTrainingData(infile, outfile, maxRows):
+	with open(infile) as f:
+		with open(outfile, 'w') as c:
+			reader = csv.reader(f)
+			writer = csv.writer(c)
+			for i in range(0, maxRows):
+				writer.writerow(reader.next())
+
+#UNCOMMENT#### if you want to partition data
+#infile = 'testing.csv' #file to process
+#outfile = 'testing50entries.csv' #file you write to (partitioned data)
+#partitionTrainingData(infile, outfile, 50)
+############################################
+trainFile = 'training.csv'
+testFile = 'testing.csv'
+training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
+testing = makeTestingMatrix(testFile, 1.0)  #testFile = testing data
+predictions = classify(testing, training, classCounts) #predictions is a list of lists
+writePredictions(predictions) #write predictions to a kaggle-friendly .csv
+
 
 
 
