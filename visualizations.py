@@ -6,10 +6,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 ####confusionMatrix########
-# takes a 2-d array, converts to a dataframe and prints to a text file
+# takes a dataframe and prints to a text file
 # m ::: a 2-d array (matrix)
-def confusionMatrix(m):
-	df = pd.DataFrame(m)
+def confusionMatrix(df):
 	np.savetxt('confusion.txt', df.values, fmt='%d')
 	return
 
