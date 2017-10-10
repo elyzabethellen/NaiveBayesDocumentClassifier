@@ -3,27 +3,56 @@
 #last updated 10/09/2017
 import numpy as np
 import csv
-from bayesForDays import classReference # class number : ('newsgroup.names', totalWordCount (this class), P(this class) = seen[label]/ trainingDataCount)
-
+from bayesForDays import *
 
 CLASSES = 20
 VOCABULARY = 61188
-###########################################
-#TODO:Make this into a function that takes BETA as a value....
 
-BETA = 1/VOCABULARY #for testing part 1 only!!!!!! "Hallucinating" one count of a word
+########updateForBeta#######
+# takes a beta value and updates the training matrix and total word counts based on it
+def updateForBeta(beta, trainingMatrix, classWordCount):
+	betaMatrix = np.ones((CLASSES + 1, VOCABULARY + 1))
+	np.add(betaMatrix, trainingMatrix) #add beta to the 0 counts
+	divisor = []
+	divisor.append(0)
+	for i in range (1, CLASSES + 1):
+		classWordCount[i] += beta #add beta to the total word counts for each class
+		for j in range(1, VOCABULARY + 1):
+			trainingMatrix[i, j] = float(trainingMatrix[i,j])/classWordCount[i]
+	return trainingMatrix, classWordCount
 
-predictions = []
-with open ('testing.csv') as f:
-	reader = csv.reader(f)
-	for row in reader: #for each data point to predict
-		#make an array and initialize with log likelihoods for all classes, then just keep summing as we see more entries
-		#sum in place in the array, where position is equivalent to class.
-		classComparisons = np.zeros((1, CLASSES + 1))
-		for i in range(1, CLASSES + 1):
-			classComparisons[i] += np.log(classReference.get(i)[2])# log P(Y) goes in all slots as the first sum, grab from classReference
-		for i in range(1, VOCABULARY + 1):
-			if row[i] != '0':
-				classComparisons = (c + np.log(BETA) for c in classComparisons) #add the log of beta to each slot if we hallucinated a value
-			else:
-				#TODO: calculate the log likelihood for each entry and sum--look at adjusting numerator AND denominator for "hallucinated" values
+#########writePredictions#########
+# predictions: a list of predictions: id, class
+def writePredictions(predictions):
+	with open('predictions.csv', 'w') as f:
+		writer = csv.writer(f)
+		writer.writerow('id,class')
+		for p in predictions:
+			writer.writerow(p)
+	return
+
+##########makePredictionMatrix#####
+# read test data into a matrix.
+def predict(trainingMatrix, classToPrior):
+	predictions = []
+	with open('testing.csv', 'r') as f:
+		reader = csv.reader(f)
+		for row in reader:
+			max = -1
+			idx = -1
+			dataToLabel = np.ones(1, VOCABULARY + 1)
+			for i in range(1, VOCABULARY + 1):
+				dataToLabel[0, i] += int(row[i])
+			for x in range(1, CLASSES + 1):
+				val = maxVal(dataToLabel, trainingMatrix[x,])
+				if val > max:
+					max = val
+					idx = x
+		predictions.append((row, idx))
+	return predictions
+
+def maxVal(pred, trained, prior):
+	val = prior * np.multiply(pred, trained)
+	return val
+
+

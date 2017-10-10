@@ -1,15 +1,17 @@
 ###Testing scratch file to ensure that functions work the way we think they do........
 import numpy as np
-from visualizations import confusionMatrix
-from bayesForDays import classReference
+from visualizations import *
+from bayesForDays import *
+from theTester import *
 
-mTest = np.matrix('1, 2 ; 3, 4')
-confusionMatrix(mTest)
+CLASSES = 20
+VOCABULARY = 61188
 
-x = [1, 2, 3, 4]
+classCount, trainingDataCount, trainingMatrix = makeTrainingMatrix()
+classToLabel, classWordCount, classToPrior = makeDicts(classCount, trainingDataCount, trainingMatrix)
 
-x = (x + 1 for x in x)
-print list(x)
+beta = 1
+trainingMatrix, classWordCount = updateForBeta(beta, trainingMatrix, classWordCount)
 
-for k in classReference.keys():
-	print k
+result = predict(trainingMatrix, classToPrior)
+print result
