@@ -3,6 +3,7 @@
 #last updated 10/10/2017
 
 import pandas as pd
+import csv
 
 ########makeTrainingMatrix##############
 # read the .csv data to a pandas dataframe
@@ -47,17 +48,23 @@ def makeLabelDict():
 #######classify#############
 def classify(df, training):
 	predictions = []
+	predictions.append(['id','class'])
 	for i in xrange(0, len(df.index)): #for each data point
 		copy = training
-		result =  copy.mul(df.iloc[i]).prod() #multiply df row by training data then mult across
+		result =  copy.mul(df.iloc[i]).prod(axis=0, skipna=True) #multiply test row by training data then mult across
 		predictions.append([i, result.idxmax()])
 	return predictions
 
-
+#####writePredictions#########
+def writePredictions(predictions):
+	with open('predictions.csv', 'w') as f:
+		writer = csv.writer(f)
+		writer.writerows(predictions)
 
 training, classCounts = makeTrainingMatrix(1)
 testing = makeTestingMatrix(1)
 predictions = classify(testing, training)
+writePredictions(predictions)
 print predictions
 
 
