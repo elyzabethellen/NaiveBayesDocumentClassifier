@@ -32,6 +32,7 @@ def betaAdjustment(training, beta):
 # return testing
 def makeTestingMatrix(filename, beta):
 	testing = pd.read_csv(filename, header =None, index_col=0)
+	#testing = (testing.T / testing.T.sum()).T #div by row sum to get probabilities
 	return testing
 
 ########makeLabelDict##############
@@ -52,15 +53,12 @@ def classify(df, t, classCounts):
 	predictions.append(['id','class'])
 	for i in xrange(0, len(df.index)): #for each data point
 		training = t
-		#result = (training.mul(df.iloc[i])).T
 		row = df.iloc[[i]]
 		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns--double [[]] to force df, not series
-		ref = pd.DataFrame(nonZero)
 		cols = nonZero.columns.tolist()
 		training = training[cols] #slice training using columns from nonZero
-		training = training.multiply(list(nonZero), axis = 1) #get probs across
-		#finally, multiply across each row and then by its class prob
-		training = training.T.prod(axis=0)
+		training = training.multiply(list(nonZero)) #get probs across removed (AXIS = 1)
+		training = training.prod(axis=1)
 		result = training * classCounts
 		predictions.append([df.index[i], result.idxmax()])
 	return predictions
@@ -69,7 +67,7 @@ def classify(df, t, classCounts):
 # writing helper function that expects a list of lists
 # and writes a Kaggle-friendly .csv
 def writePredictions(predictions):
-	with open('predictions2.csv', 'w') as f:
+	with open('predictions.csv', 'w') as f:
 		writer = csv.writer(f)
 		writer.writerows(predictions)
 
