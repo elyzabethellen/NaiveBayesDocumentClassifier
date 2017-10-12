@@ -8,7 +8,7 @@ import pandas as pd
 ####confusionMatrix########
 # takes a dataframe and prints to a text file
 # m ::: a 2-d array (matrix)
-def confusionMatrix(df):
+def printConfusionMatrix(df):
 	np.savetxt('confusion.txt', df.values, fmt='%d')
 	return
 

@@ -3,7 +3,6 @@
 #last updated 10/10/2017
 
 import pandas as pd
-import numpy as np
 import csv
 
 ########makeTrainingMatrix##############
@@ -35,7 +34,6 @@ def betaAdjustment(training, beta):
 # return testing
 def makeTestingMatrix(filename, beta):
 	testing = pd.read_csv(filename, header =None, index_col=0)
-	#testing = (testing.T / testing.T.sum()).T #div by row sum to get probabilities
 	return testing
 
 ########makeLabelDict##############
@@ -86,17 +84,34 @@ def partitionTrainingData(infile, outfile, maxRows):
 			for i in range(0, maxRows):
 				writer.writerow(reader.next())
 
-#UNCOMMENT#### if you want to partition data
+#####createConfusionMatrix
+# returns a confusion matrix
+def createConfusionMatrix():
+	legend = makeLabelDict()
+	df = pd.DataFrame(0, index=legend.values(), columns= legend.keys())
+	return df
+
+####UNCOMMENT TO PARTITION DATA
 #infile = 'testing.csv' #file to process
 #outfile = 'testing50entries.csv' #file you write to (partitioned data)
 #partitionTrainingData(infile, outfile, 50)
+
+#MAIN SCRIPT
 ############################################
-trainFile = 'training.csv'
-testFile = 'testing.csv'
-training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
-testing = makeTestingMatrix(testFile, 1.0)  #testFile = testing data
-predictions = classify(testing, training, classCounts) #predictions is a list of lists
-writePredictions(predictions) #write predictions to a kaggle-friendly .csv
+#trainFile = 'trainingFirst10Percent.csv'
+#testFile = 'testing10entriesonly.csv'
+#outPredictionsFile = 'predictions.csv'
+#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
+#testing = makeTestingMatrix(testFile, 1.0)  #testFile = testing data
+#predictions = classify(testing, training, classCounts) #predictions is a list of lists
+
+####UNCOMMENT TO CREATE AND PRINT CONFUSION MATRIX TO .TXT FILE
+from visualizations import printConfusionMatrix
+df = createConfusionMatrix()
+printConfusionMatrix(df)
+
+####UNCOMMENT TO WRITE TO KAGGLE_CSV
+#writePredictions(predictions, outPredictionsFile) #write predictions to a kaggle-friendly .csv
 
 
 
