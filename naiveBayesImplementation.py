@@ -13,11 +13,14 @@ import csv
 # return training, classCounts
 def makeTrainingMatrix(filename, beta):
 	df = pd.read_csv(filename, header = None, index_col=61189)
+	df.index.name = 'class'
 	classCounts = df.index.value_counts() #how many times a class was seen, for probablilites
 	classCounts = classCounts.T / classCounts.T.sum() #make into probs
 	classCounts = classCounts.sort_index() # sort by class index
 	df = df.groupby(df.index).sum() #group all classes together and sum their columns by class
 	df = betaAdjustment(df, beta) #add hallucinated counts (beta from Dirichlet distribution)
+	x = df.columns.tolist()
+	df = df.drop(x[0], axis =1)
 	df = (df.T / df.T.sum()).T #probabilities: divide by each row sum of elements
 	return df, classCounts
 
