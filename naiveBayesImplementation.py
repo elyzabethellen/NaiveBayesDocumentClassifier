@@ -4,6 +4,7 @@
 
 import pandas as pd
 import csv
+import itertools
 
 ########makeTrainingMatrix##############
 # read the .csv data to a pandas dataframe
@@ -32,7 +33,7 @@ def betaAdjustment(training, beta):
 # read the .csv data to a pandas dataframe
 # row indices = id label
 # return testing
-def makeTestingMatrix(filename, beta):
+def makeTestingMatrix(filename):
 	testing = pd.read_csv(filename, header =None, index_col=0)
 	return testing
 
@@ -74,43 +75,61 @@ def writePredictions(predictions):
 
 #####partitionData##########
 # infile: data to be partitioned
-# outfile: resulting partition
-# maxRows: max rows in outfile
-def partitionTrainingData(infile, outfile, maxRows):
-	with open(infile) as f:
-		with open(outfile, 'w') as c:
-			reader = csv.reader(f)
-			writer = csv.writer(c)
-			for i in range(0, maxRows):
-				writer.writerow(reader.next())
+# outfile1: resulting partition to be used as test
+# outfile2: remaining data
+# rows: number of rows in outfile1
+def partitionTrainingData(infile, outfile1, outfile2, rows):
+	with open(infile, 'rb') as f, open(outfile1, 'wb') as out1, open(outfile2, 'wb') as out2:
+		reader = csv.reader(f)
+		csv.writer(out1).writerows(itertools.islice(reader, 0, rows))
+		csv.writer(out2).writerows(reader)
+
+#####reshapeTrainAsTest
+# takes training-style .csv, and strips the class data
+# expects the id col to be intact! not grouped by class
+def reshapeTrainAsTest(fileToReshape):
+	test = makeTestingMatrix(fileToReshape)
+	groundTruth = test[61189].tolist()
+	test = test.drop(61189, axis=1)
+	return test, groundTruth
 
 #####createConfusionMatrix
 # returns a confusion matrix
-def createConfusionMatrix():
+def createConfusionMatrix(predictions, groundTruth):
 	legend = makeLabelDict()
-	df = pd.DataFrame(0, index=legend.values(), columns= legend.keys())
+	df = pd.DataFrame(0, index=legend.keys(), columns= legend.keys())
+	p = [element[1] for element in predictions]
+	p.pop(0) #get rid of the 'id, class'
+	for i in xrange(0, len(p)):
+		df.ix[groundTruth[i], p[i]] += 1
 	return df
 
-####UNCOMMENT TO PARTITION DATA
-#infile = 'testing.csv' #file to process
-#outfile = 'testing50entries.csv' #file you write to (partitioned data)
-#partitionTrainingData(infile, outfile, 50)
+####UNCOMMENT TO PARTITION DATA: TEST MATRIX IS MADE HERE!
+# testing is your test matrix! do not create an additional test matrix in main script
+# refer to comments in main script
+infile = 'training.csv' #file to process
+outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
+outfile2 = 'training90.csv' #file you write to, train (partitioned data)
+partitionTrainingData(infile, outfile1, outfile2, 1200)
+testing, groundTruth = reshapeTrainAsTest(outfile1)
 
 #MAIN SCRIPT
 ############################################
-#trainFile = 'trainingFirst10Percent.csv'
-#testFile = 'testing10entriesonly.csv'
-#outPredictionsFile = 'predictions.csv'
-#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
-#testing = makeTestingMatrix(testFile, 1.0)  #testFile = testing data
-#predictions = classify(testing, training, classCounts) #predictions is a list of lists
+trainFile = outfile2
+#testFile = outfile1 #comment out if you partitioned data!
 
-####UNCOMMENT TO CREATE AND PRINT CONFUSION MATRIX TO .TXT FILE
-from visualizations import printConfusionMatrix
-df = createConfusionMatrix()
+training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
+#testing = makeTestingMatrix(testFile)  #testFile = testing data #comment out if you partitioned data!
+predictions = classify(testing, training, classCounts) #predictions is a list of lists
+
+####UNCOMMENT TO CREATE CONFUSION MATRIX, PRINT TO .TXT FILE, VISUALIZE
+from visualizations import printConfusionMatrix, heatmap
+df = createConfusionMatrix(predictions, groundTruth)
 printConfusionMatrix(df)
+heatmap(df, dict = makeLabelDict())
 
-####UNCOMMENT TO WRITE TO KAGGLE_CSV
+####UNCOMMENT TO WRITE TO KAGGLE CSV
+#outPredictionsFile = 'predictions.csv'
 #writePredictions(predictions, outPredictionsFile) #write predictions to a kaggle-friendly .csv
 
 

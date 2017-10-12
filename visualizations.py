@@ -27,4 +27,20 @@ def plotBetaAccuracies(betas):
 	plt.plot(betas, accuracies)
 	plt.savefig("leTest.jpg")
 	plt.show()
+	return
+
+
+###heatmap################
+# df ::: a dataframe to be visualized
+def heatmap(df, dict):
+	fig, ax = plt.subplots()
+	fig.subplots_adjust(left=0.3)
+	im = ax.imshow(df, interpolation='nearest', cmap=plt.cm.ocean)
+	ax.set_xticks(range(len(df.columns)))
+	ax.set_yticks(range(len(df.index)))
+	ax.set_xticklabels(dict.keys())
+	ax.set_yticklabels(df.index)
+	fig.colorbar(im, ax=ax)
+	fig.savefig('confusion.jpg', dpi=300)
+	return
 
