@@ -59,7 +59,7 @@ def classify(df, t, classCounts):
 		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns--double [[]] to force df, not series
 		cols = nonZero.columns.tolist()
 		training = training[cols] #slice training using columns from nonZero
-		training = training.multiply(list(nonZero)) #get probs across removed (AXIS = 1)
+		training = training.multiply(list(nonZero.values[0])) #get probs across removed (AXIS = 1)
 		training = training.prod(axis=1)
 		result = training * classCounts
 		predictions.append([df.index[i], result.idxmax()])
@@ -68,8 +68,8 @@ def classify(df, t, classCounts):
 #####writePredictions#########
 # writing helper function that expects a list of lists
 # and writes a Kaggle-friendly .csv
-def writePredictions(predictions):
-	with open('predictions.csv', 'w') as f:
+def writePredictions(outPredictionsFile, predictions):
+	with open(outPredictionsFile, 'w') as f:
 		writer = csv.writer(f)
 		writer.writerows(predictions)
 
@@ -107,30 +107,35 @@ def createConfusionMatrix(predictions, groundTruth):
 ####UNCOMMENT TO PARTITION DATA: TEST MATRIX IS MADE HERE!
 # testing is your test matrix! do not create an additional test matrix in main script
 # refer to comments in main script
-infile = 'training.csv' #file to process
-outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
-outfile2 = 'training90.csv' #file you write to, train (partitioned data)
-partitionTrainingData(infile, outfile1, outfile2, 1200)
-testing, groundTruth = reshapeTrainAsTest(outfile1)
+#infile = 'training.csv' #file to process
+#outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
+#outfile2 = 'training90.csv' #file you write to, train (partitioned data)
+#partitionTrainingData(infile, outfile1, outfile2, 1200)
+#testing, groundTruth = reshapeTrainAsTest(outfile1)
 
 #MAIN SCRIPT
 ############################################
-trainFile = outfile2
-#testFile = outfile1 #comment out if you partitioned data!
+
+trainFile = 'training.csv'
+testFile = 'testing.csv'
+
+trainFile = 'training10test.csv'
+testFile = 'testing10entriesonly.csv'
+
 
 training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
-#testing = makeTestingMatrix(testFile)  #testFile = testing data #comment out if you partitioned data!
+testing = makeTestingMatrix(testFile)  #testFile = testing data #comment out if you partitioned data!
 predictions = classify(testing, training, classCounts) #predictions is a list of lists
 
 ####UNCOMMENT TO CREATE CONFUSION MATRIX, PRINT TO .TXT FILE, VISUALIZE
-from visualizations import printConfusionMatrix, heatmap
-df = createConfusionMatrix(predictions, groundTruth)
-printConfusionMatrix(df)
-heatmap(df, dict = makeLabelDict())
+#from visualizations import printConfusionMatrix, heatmap
+#df = createConfusionMatrix(predictions, groundTruth)
+#printConfusionMatrix(df)
+#heatmap(df, dict = makeLabelDict())
 
 ####UNCOMMENT TO WRITE TO KAGGLE CSV
-#outPredictionsFile = 'predictions.csv'
-#writePredictions(predictions, outPredictionsFile) #write predictions to a kaggle-friendly .csv
+outPredictionsFile = 'predictions.csv'
+writePredictions(outPredictionsFile, predictions) #write predictions to a kaggle-friendly .csv
 
 
 

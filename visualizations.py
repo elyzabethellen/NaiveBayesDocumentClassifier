@@ -27,7 +27,6 @@ def plotBetaAccuracies(betas):
 	plt.plot(betas, accuracies)
 	plt.savefig("leTest.jpg")
 	plt.show()
-	return
 
 
 ###heatmap################
@@ -43,4 +42,3 @@ def heatmap(df, dict):
 	fig.colorbar(im, ax=ax)
 	fig.savefig('confusion.jpg', dpi=300)
 	return
-
