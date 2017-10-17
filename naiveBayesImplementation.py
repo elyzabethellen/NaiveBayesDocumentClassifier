@@ -19,21 +19,23 @@ def makeTrainingMatrix(filename, beta):
 	classCounts = classCounts.T / classCounts.T.sum() #make into probs
 	classCounts = classCounts.sort_index() # sort by class index
 	df = df.groupby(df.index).sum() #group all classes together and sum their columns by class--row index becomes class
-	df = betaAdjustment(df, beta) #add hallucinated counts (beta from Dirichlet distribution)
-	x = df.columns.tolist()
-	df = df.drop(x[0], axis =1)
+	x = df.columns.tolist() #get a list of all columns
+	df = df.drop(x[0], axis =1) #drop the id number column, no calculations on that please!
 	df = (df.T / df.T.sum()).T #probabilities: divide by each row sum of elements
+	df = betaAdjustment(df, beta)  # add hallucinated counts (beta from Dirichlet distribution)
 	return df, classCounts
 
 ########betaAdjustment###############
-# fill in the beta val to use as dirichlet prior
+# training ::: training matrix dataframe
+# beta ::: value for beta
+# add beta val to use as dirichlet prior to each df entry
 def betaAdjustment(training, beta):
-	return training + beta
+	return training + beta #plus operator acts elementwise on a dataframe
 
 ########makeTrainingMatrix##############
 # read the .csv data to a pandas dataframe
 # row indices = id label
-# return testing
+# return testing :: dataframe from .csv, unaltered
 def makeTestingMatrix(filename):
 	testing = pd.read_csv(filename, header =None, index_col=0)
 	return testing
@@ -51,7 +53,10 @@ def makeLabelDict():
 	return classToLabel
 
 #######classify#############
-#
+# df ::: testing matrix
+# t  ::: training matrix
+# classCounts ::: list of times class appeared (for P(Y))
+# return predictions ::: list of lists [id, classPrediction]
 def classify(df, t, classCounts):
 	predictions = []
 	predictions.append(['id','class'])
@@ -112,35 +117,46 @@ def createConfusionMatrix(predictions, groundTruth):
 		df.ix[groundTruth[i], p[i]] += 1 #increment the value here, a correct prediction will be on the identity
 	return df
 
-####UNCOMMENT TO PARTITION DATA: TEST MATRIX IS MADE HERE!
-# testing is your test matrix! do not create an additional test matrix in main script
-# refer to comments in main script
-#infile = 'training.csv' #file to process
-#outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
-#outfile2 = 'training90.csv' #file you write to, train (partitioned data)
-#partitionTrainingData(infile, outfile1, outfile2, 1200)
-#testing, groundTruth = reshapeTrainAsTest(outfile1)
+####betaAccuracyEvaluation##########
+# betaVal ::: adjust weight of prior and evaluate performance
+def betaAccuracyEvaluation(betaVal):
+	accuracy = None
+	return accuracy
 
-#MAIN SCRIPT
+
+
+#FOR INTERNAL TESTING (CONVERT TRAIN TO TEST)
 ############################################
-trainFile = 'training.csv'
-testFile = 'testing.csv'
-
-
+infile = 'training.csv' #file to process
+outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
+outfile2 = 'training90.csv' #file you write to, train (partitioned data)
+partitionTrainingData(infile, outfile1, outfile2, rows = 1200)
+testing, groundTruth = reshapeTrainAsTest(outfile1)
+trainFile = 'training10Test.csv'
 training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
-testing = makeTestingMatrix(testFile)  #testFile = testing data #comment out if you partitioned data!
 predictions = classify(testing, training, classCounts) #predictions is a list of lists
 
-####UNCOMMENT TO CREATE CONFUSION MATRIX, PRINT TO .TXT FILE, VISUALIZE
+
+#TEST A RANGE OF BETA VALUES
+############################################
+
+
+
+#CREATE CONFUSION MATRIX IMG AND PRINT TO .TXT FILE
+############################################
 #from visualizations import printConfusionMatrix, heatmap
-#df = createConfusionMatrix(predictions, groundTruth)
-#printConfusionMatrix(df)
+#printConfusionMatrix(df = createConfusionMatrix(predictions, groundTruth))
 #heatmap(df, dict = makeLabelDict())
 
-####UNCOMMENT TO WRITE TO KAGGLE CSV
-outPredictionsFile = 'predictions.csv'
-writePredictions(outPredictionsFile, predictions) #write predictions to a kaggle-friendly .csv
-
+#KAGGLE
+############################################
+#trainFile = 'training.csv'
+#testFile = 'testing.csv'
+#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
+#testing = makeTestingMatrix(testFile)  #testFile = testing data
+#writePredictions(outPredictionsFile = 'predictions.csv', predictions)
+#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
+#predictions = classify(testing, training, classCounts) #predictions is a list of lists
 
 
 

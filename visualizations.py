@@ -12,15 +12,10 @@ def printConfusionMatrix(df):
 	np.savetxt('confusion.txt', df.values, fmt='%d')
 	return
 
-####betaAccuracyEvaluation##########
-# betaVal ::: adjust weight of prior and evaluate performance
-def betaAccuracyEvaluation(betaVal):
-	accuracy = None
-	return accuracy
-
 ###plotBetaAccuracies######
 # betas  :::  a list of beta values to be evaluated
-def plotBetaAccuracies(betas):
+def plotBetaAccuracies():
+	betas = np.linspace()
 	accuracies = []
 	for b in betas:
 		accuracies.append(betaAccuracyEvaluation(b))
@@ -28,10 +23,10 @@ def plotBetaAccuracies(betas):
 	plt.savefig("leTest.jpg")
 	plt.show()
 
-
 ###heatmap################
 # df ::: a dataframe to be visualized
-# dict :::
+# dict ::: a dictionary of numerical class values to their text values
+# saves the figure locally
 def heatmap(df, dict):
 	fig, ax = plt.subplots()
 	fig.subplots_adjust(left=0.3)
