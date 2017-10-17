@@ -31,6 +31,7 @@ def plotBetaAccuracies(betas):
 
 ###heatmap################
 # df ::: a dataframe to be visualized
+# dict :::
 def heatmap(df, dict):
 	fig, ax = plt.subplots()
 	fig.subplots_adjust(left=0.3)

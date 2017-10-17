@@ -4,6 +4,7 @@
 
 import pandas as pd
 import csv
+import numpy as np
 import itertools
 
 ########makeTrainingMatrix##############
@@ -17,7 +18,7 @@ def makeTrainingMatrix(filename, beta):
 	classCounts = df.index.value_counts() #how many times a class was seen, for probablilites
 	classCounts = classCounts.T / classCounts.T.sum() #make into probs
 	classCounts = classCounts.sort_index() # sort by class index
-	df = df.groupby(df.index).sum() #group all classes together and sum their columns by class
+	df = df.groupby(df.index).sum() #group all classes together and sum their columns by class--row index becomes class
 	df = betaAdjustment(df, beta) #add hallucinated counts (beta from Dirichlet distribution)
 	x = df.columns.tolist()
 	df = df.drop(x[0], axis =1)
@@ -50,34 +51,37 @@ def makeLabelDict():
 	return classToLabel
 
 #######classify#############
+#
 def classify(df, t, classCounts):
 	predictions = []
 	predictions.append(['id','class'])
-	for i in xrange(0, len(df.index)): #for each data point
-		training = t
-		row = df.iloc[[i]]
-		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns--double [[]] to force df, not series
-		cols = nonZero.columns.tolist()
-		training = training[cols] #slice training using columns from nonZero
-		training = training.multiply(list(nonZero.values[0])) #get probs across removed (AXIS = 1)
-		training = training.prod(axis=1)
-		result = training * classCounts
-		predictions.append([df.index[i], result.idxmax()])
+	for i in xrange(0, len(df.index)): #for each data point in the test data
+		training = t #copy the training matrix
+		row = df.iloc[[i]] #get our current test data row
+		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns from test data row; double [[]] to force df, not series
+		cols = nonZero.columns.tolist() #list the columns that have values
+		training = training[cols] #slice training copy using columns from nonZero
+		training = training.mul(list(nonZero), axis=1) #multiply each row of training matrix by testing row vector = P(x | Y)
+		#training = training.mul(list(nonZero.values[0]), axis=1) #
+		training = training.prod(axis=1) #take the row product of each row, results in vector
+		result = training * classCounts #multiply vector result by vector of P(Y)
+		predictions.append([df.index[i], result.idxmax()]) #append id number, idxmax() gives the row index of the max value; the row index corresponds to the class => prediction
 	return predictions
 
 #####writePredictions#########
-# writing helper function that expects a list of lists
-# and writes a Kaggle-friendly .csv
+# outPredictionsFile ::: string, file to write to
+# predictions ::: list of lists [id, classPrediction]
+# writes a Kaggle-friendly .csv
 def writePredictions(outPredictionsFile, predictions):
 	with open(outPredictionsFile, 'w') as f:
 		writer = csv.writer(f)
 		writer.writerows(predictions)
 
 #####partitionData##########
-# infile: data to be partitioned
-# outfile1: resulting partition to be used as test
-# outfile2: remaining data
-# rows: number of rows in outfile1
+# infile ::: data to be partitioned
+# outfile1 ::: resulting partition to be used as test
+# outfile2 :::  remaining data
+# rows::: number of rows in outfile1
 def partitionTrainingData(infile, outfile1, outfile2, rows):
 	with open(infile, 'rb') as f, open(outfile1, 'wb') as out1, open(outfile2, 'wb') as out2:
 		reader = csv.reader(f)
@@ -85,23 +89,27 @@ def partitionTrainingData(infile, outfile1, outfile2, rows):
 		csv.writer(out2).writerows(reader)
 
 #####reshapeTrainAsTest
-# takes training-style .csv, and strips the class data
-# expects the id col to be intact! not grouped by class
+# filetoreshape ::: path to training-style .csv, strips the class data
+# expects non-altered data
+# returns test ::: dataframe in test matrix format
+#         groundTruth ::: classifications for each row of dataframe
 def reshapeTrainAsTest(fileToReshape):
-	test = makeTestingMatrix(fileToReshape)
-	groundTruth = test[61189].tolist()
-	test = test.drop(61189, axis=1)
+	test = makeTestingMatrix(fileToReshape) #make the testing matrix dataframe
+	groundTruth = test[61189].tolist() #save the class column into a list
+	test = test.drop(61189, axis=1) #remove class column from the dataframe
 	return test, groundTruth
 
 #####createConfusionMatrix
-# returns a confusion matrix
+# predictions ::: list of [id, class predictions] made by classify()
+# groundTruth ::: list of ground truth values made by reshapeTrainAsTest()
+# returns df ::: a confusion matrix Dataframe
 def createConfusionMatrix(predictions, groundTruth):
 	legend = makeLabelDict()
-	df = pd.DataFrame(0, index=legend.keys(), columns= legend.keys())
-	p = [element[1] for element in predictions]
-	p.pop(0) #get rid of the 'id, class'
+	df = pd.DataFrame(0, index=legend.keys(), columns= legend.keys()) #creates a dataframe of size labels X labels
+	p = [element[1] for element in predictions] #grab the classes out of the predictions list and ditch the id numbers
+	p.pop(0) #get rid of the 'id, class' that's stored in index 0
 	for i in xrange(0, len(p)):
-		df.ix[groundTruth[i], p[i]] += 1
+		df.ix[groundTruth[i], p[i]] += 1 #increment the value here, a correct prediction will be on the identity
 	return df
 
 ####UNCOMMENT TO PARTITION DATA: TEST MATRIX IS MADE HERE!
@@ -115,12 +123,8 @@ def createConfusionMatrix(predictions, groundTruth):
 
 #MAIN SCRIPT
 ############################################
-
 trainFile = 'training.csv'
 testFile = 'testing.csv'
-
-trainFile = 'training10test.csv'
-testFile = 'testing10entriesonly.csv'
 
 
 training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
