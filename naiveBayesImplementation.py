@@ -21,16 +21,17 @@ def makeTrainingMatrix(filename, beta):
 	df = df.groupby(df.index).sum() #group all classes together and sum their columns by class--row index becomes class
 	x = df.columns.tolist() #get a list of all columns
 	df = df.drop(x[0], axis =1) #drop the id number column, no calculations on that please!
-	df = (df.T / df.T.sum()).T #probabilities: divide by each row sum of elements
 	df = betaAdjustment(df, beta)  # add hallucinated counts (beta from Dirichlet distribution)
 	return df, classCounts
 
 ########betaAdjustment###############
 # training ::: training matrix dataframe
 # beta ::: value for beta
-# add beta val to use as dirichlet prior to each df entry
+# add beta val to use as dirichlet prior to each df entry and divide by row-wise sum to get probability
 def betaAdjustment(training, beta):
-	return training + beta #plus operator acts elementwise on a dataframe
+	training = training + beta #plus operator acts elementwise on a dataframe
+	return (training.T / training.T.sum()).T #probabilities: divide by each row sum of elements
+
 
 ########makeTrainingMatrix##############
 # read the .csv data to a pandas dataframe
@@ -120,10 +121,8 @@ def createConfusionMatrix(predictions, groundTruth):
 ####betaAccuracyEvaluation##########
 # betaVal ::: adjust weight of prior and evaluate performance
 def betaAccuracyEvaluation(betaVal):
-	accuracy = None
-	return accuracy
-
-
+	training, classCounts = makeTrainingMatrix(trainFile, betaVal)  # trainFile = training data
+	return training, classCounts
 
 #FOR INTERNAL TESTING (CONVERT TRAIN TO TEST)
 ############################################
@@ -132,19 +131,34 @@ outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
 outfile2 = 'training90.csv' #file you write to, train (partitioned data)
 partitionTrainingData(infile, outfile1, outfile2, rows = 1200)
 testing, groundTruth = reshapeTrainAsTest(outfile1)
-trainFile = 'training10Test.csv'
-training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
-predictions = classify(testing, training, classCounts) #predictions is a list of lists
+trainFile = outfile2
 
-
-#TEST A RANGE OF BETA VALUES
+#w/internal testing: TEST A RANGE OF BETA VALUES
 ############################################
+from visualizations import plotAccuracies
+betas = np.logspace(.00001, 1, 5)
+accuracies = []
+for b in betas:
+	training, classCounts = betaAccuracyEvaluation(b)
+	predictions = classify(testing, training, classCounts)
+	p = [element[1] for element in predictions]
+	p.pop(0)
+	accuracy = 0.0
+	for i in xrange(0, len(p)):
+		if groundTruth[i] == p[i]:
+			accuracy += 1.0
+	accuracy /= len(p)
+	accuracies.append(accuracy)
+	print accuracy
+plotAccuracies(betas, accuracies)
 
 
 
-#CREATE CONFUSION MATRIX IMG AND PRINT TO .TXT FILE
+#w/internal testing: CREATE CONFUSION MATRIX IMG AND PRINT TO .TXT FILE
 ############################################
 #from visualizations import printConfusionMatrix, heatmap
+#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
+#predictions = classify(testing, training, classCounts) #predictions is a list of lists
 #printConfusionMatrix(df = createConfusionMatrix(predictions, groundTruth))
 #heatmap(df, dict = makeLabelDict())
 
@@ -154,9 +168,9 @@ predictions = classify(testing, training, classCounts) #predictions is a list of
 #testFile = 'testing.csv'
 #training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
 #testing = makeTestingMatrix(testFile)  #testFile = testing data
-#writePredictions(outPredictionsFile = 'predictions.csv', predictions)
-#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
 #predictions = classify(testing, training, classCounts) #predictions is a list of lists
+#writePredictions(outPredictionsFile = 'predictions.csv', predictions)
+
 
 
 
