@@ -21,6 +21,7 @@ def plotAccuracies(betas, accuracies):
 	plt.xlabel('beta')
 	plt.ylabel('accuracy')
 	plt.savefig('beta.jpg', dpi = 300)
+	print 'Accuracy values for beta ='
 	print accuracies
 	plt.show()
 
@@ -37,5 +38,5 @@ def heatmap(df, dict):
 	ax.set_xticklabels(dict.keys())
 	ax.set_yticklabels(df.index)
 	fig.colorbar(im, ax=ax)
-	fig.savefig('confusion.jpg', dpi=300)
-	return
+	fig.show()
+	#fig.savefig('confusion.jpg', dpi=300)
