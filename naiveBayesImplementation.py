@@ -69,7 +69,7 @@ def classify(df, t, classCounts):
 		training =  training.mul(nonZero, axis=1)#multiply each row of the training matrix (axis=1) by the current row of test data
 		training = training.prod(axis = 1) #and we sum!
 		result = training * classCounts #multiply resulting vector by vector of P(Y) (probability that class occurred)
-		predictions.append([df.index[i], training.idxmax()]) #append id number, idxmax() gives the row index of the max value from result; the row index corresponds to the class => prediction
+		predictions.append([df.index[i], result.idxmax()]) #append id number, idxmax() gives the row index of the max value from result; the row index corresponds to the class => prediction
 	return predictions
 
 #####writePredictions#########
