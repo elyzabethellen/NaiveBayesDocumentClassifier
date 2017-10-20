@@ -19,4 +19,5 @@ The program will:
 - run the beta value experiments for 5 levels of beta and produce a plot
 - produce a confusion matrix
 The program will communicate its current process and timestamp so progress is visible.
+You will need to manually close the plot to continue. The plot will occasionally appear below your current active window.
 It takes roughly 13 minutes in full to execute.
