@@ -30,8 +30,7 @@ def makeTrainingMatrix(filename, beta):
 # add beta val to use as dirichlet prior to each df entry and divide by row-wise sum to get probability
 def betaAdjustment(training, beta):
 	training = training + beta #plus operator acts elementwise on a dataframe
-	return (training.T / training.T.sum()).T #probabilities: divide by each row sum of elements
-
+	return training.div(training.sum(axis=1), axis =0)  #probabilities: divide by each row sum of elements
 
 ########makeTrainingMatrix##############
 # read the .csv data to a pandas dataframe
@@ -64,21 +63,20 @@ def classify(df, t, classCounts):
 	for i in xrange(0, len(df.index)): #for each data point in the test data
 		training = t #copy the training matrix
 		row = df.iloc[[i]] #get our current test data row
-		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns from test data row; double [[]] to force df, not series
+		nonZero = row.loc[:, (row != 0).all()]#get all non-zero columns values from test data row; double [[]] to force df, not series
 		cols = nonZero.columns.tolist() #list the columns that have values
-		training = training[cols] #slice training copy using columns from nonZero
-		training = training.mul(list(nonZero), axis=1) #multiply each row of training matrix by testing row vector = P(x | Y)
-		#training = training.mul(list(nonZero.values[0]), axis=1) #
-		training = training.prod(axis=1) #take the row product of each row, results in vector
-		result = training * classCounts #multiply vector result by vector of P(Y)
-		predictions.append([df.index[i], result.idxmax()]) #append id number, idxmax() gives the row index of the max value; the row index corresponds to the class => prediction
+		training = training[cols] #slice training copy with columns from nonZero
+		training =  training.mul(nonZero, axis=1)#multiply each row of the training matrix (axis=1) by the current row of test data
+		training = training.prod(axis = 1) #and we sum!
+		result = training * classCounts #multiply resulting vector by vector of P(Y) (probability that class occurred)
+		predictions.append([df.index[i], training.idxmax()]) #append id number, idxmax() gives the row index of the max value from result; the row index corresponds to the class => prediction
 	return predictions
 
 #####writePredictions#########
 # outPredictionsFile ::: string, file to write to
 # predictions ::: list of lists [id, classPrediction]
 # writes a Kaggle-friendly .csv
-def writePredictions(outPredictionsFile, predictions):
+def writePredictions(predictions, outPredictionsFile):
 	with open(outPredictionsFile, 'w') as f:
 		writer = csv.writer(f)
 		writer.writerows(predictions)
@@ -126,15 +124,18 @@ def betaAccuracyEvaluation(betaVal):
 
 #FOR INTERNAL TESTING (CONVERT TRAIN TO TEST)
 ############################################
+'''''
 infile = 'training.csv' #file to process
 outfile1 = 'training10Test.csv' #file you write to, test (partitioned data)
 outfile2 = 'training90.csv' #file you write to, train (partitioned data)
 partitionTrainingData(infile, outfile1, outfile2, rows = 1200)
 testing, groundTruth = reshapeTrainAsTest(outfile1)
 trainFile = outfile2
+'''''
 
 #w/internal testing: TEST A RANGE OF BETA VALUES
 ############################################
+'''''
 from visualizations import plotAccuracies
 betas = np.logspace(.00001, 1, 5)
 accuracies = []
@@ -149,9 +150,8 @@ for b in betas:
 			accuracy += 1.0
 	accuracy /= len(p)
 	accuracies.append(accuracy)
-	print accuracy
 plotAccuracies(betas, accuracies)
-
+'''''
 
 
 #w/internal testing: CREATE CONFUSION MATRIX IMG AND PRINT TO .TXT FILE
@@ -164,12 +164,12 @@ plotAccuracies(betas, accuracies)
 
 #KAGGLE
 ############################################
-#trainFile = 'training.csv'
-#testFile = 'testing.csv'
-#training, classCounts = makeTrainingMatrix(trainFile, 1.0) #trainFile = training data
-#testing = makeTestingMatrix(testFile)  #testFile = testing data
-#predictions = classify(testing, training, classCounts) #predictions is a list of lists
-#writePredictions(outPredictionsFile = 'predictions.csv', predictions)
+trainFile = 'training.csv'
+testFile = 'testing.csv'
+training, classCounts = makeTrainingMatrix(trainFile, 0.00001) #trainFile = training data
+testing = makeTestingMatrix(testFile)  #testFile = testing data
+predictions = classify(testing, training, classCounts) #predictions is a list of lists
+writePredictions(predictions, outPredictionsFile = 'predictions.csv')
 
 
 

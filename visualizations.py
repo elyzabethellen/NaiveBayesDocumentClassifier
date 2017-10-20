@@ -1,6 +1,6 @@
 #Elizabeth E. Esterly & Danny Byrd
 #visualizations.py
-#last updated 10/04/2017
+#last updated 10/19/2017
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -14,13 +14,14 @@ def printConfusionMatrix(df):
 
 ###plotBetaAccuracies######
 # betas  :::  a list of beta values to be evaluated
-def plotBetaAccuracies():
-	betas = np.linspace()
-	accuracies = []
-	for b in betas:
-		accuracies.append(betaAccuracyEvaluation(b))
-	plt.plot(betas, accuracies)
-	plt.savefig("leTest.jpg")
+def plotAccuracies(betas, accuracies):
+	plt.semilogx(betas, accuracies, 'co', ms= 10) #log axis for x, cyan markers, size 15
+	plt.grid(True)
+	plt.margins(0.1)
+	plt.xlabel('beta')
+	plt.ylabel('accuracy')
+	plt.savefig('beta.jpg', dpi = 300)
+	print accuracies
 	plt.show()
 
 ###heatmap################
